@@ -25,6 +25,151 @@ const InvestmentCalculator: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Popular stocks with their IPO dates for smart date selection
+  const stocksWithIPO = [
+    { symbol: "AAPL", ipoDate: "1980-12-12" },
+    { symbol: "MSFT", ipoDate: "1986-03-13" },
+    { symbol: "AMZN", ipoDate: "1997-05-15" },
+    { symbol: "GOOGL", ipoDate: "2004-08-19" },
+    { symbol: "TSLA", ipoDate: "2010-06-29" },
+    { symbol: "META", ipoDate: "2012-05-18" },
+    { symbol: "NVDA", ipoDate: "1999-01-22" },
+    { symbol: "NFLX", ipoDate: "2002-05-23" },
+    { symbol: "AMD", ipoDate: "1972-09-27" },
+    { symbol: "PYPL", ipoDate: "2015-07-06" },
+    { symbol: "DIS", ipoDate: "1957-11-12" },
+    { symbol: "BA", ipoDate: "1962-01-02" },
+    { symbol: "JPM", ipoDate: "1971-01-04" },
+    { symbol: "JNJ", ipoDate: "1944-09-25" },
+    { symbol: "PG", ipoDate: "1891-01-01" },
+    { symbol: "KO", ipoDate: "1919-09-05" },
+    { symbol: "PEP", ipoDate: "1965-12-30" },
+    { symbol: "WMT", ipoDate: "1972-08-25" },
+    { symbol: "HD", ipoDate: "1981-09-22" },
+    { symbol: "V", ipoDate: "2008-03-19" },
+    { symbol: "MA", ipoDate: "2006-05-25" },
+    { symbol: "UNH", ipoDate: "1984-10-17" },
+    { symbol: "CRM", ipoDate: "2004-06-23" },
+    { symbol: "ADBE", ipoDate: "1986-08-20" },
+    { symbol: "INTC", ipoDate: "1971-10-13" },
+    { symbol: "CSCO", ipoDate: "1990-02-16" },
+    { symbol: "VZ", ipoDate: "1983-11-21" },
+    { symbol: "T", ipoDate: "1983-11-18" },
+    { symbol: "XOM", ipoDate: "1972-01-03" },
+    { symbol: "CVX", ipoDate: "1977-07-01" },
+    { symbol: "PFE", ipoDate: "1972-06-01" },
+    { symbol: "MRK", ipoDate: "1946-01-01" },
+    { symbol: "ABBV", ipoDate: "2013-01-02" },
+    { symbol: "TMO", ipoDate: "1986-11-01" },
+    { symbol: "COST", ipoDate: "1985-12-05" },
+    { symbol: "AVGO", ipoDate: "2009-08-06" },
+    { symbol: "TXN", ipoDate: "1972-09-01" },
+    { symbol: "QCOM", ipoDate: "1991-12-16" },
+    { symbol: "ORCL", ipoDate: "1986-03-12" },
+    { symbol: "IBM", ipoDate: "1962-01-02" },
+    { symbol: "SBUX", ipoDate: "1992-06-26" },
+    { symbol: "MCD", ipoDate: "1965-04-21" },
+    { symbol: "NKE", ipoDate: "1980-12-02" },
+    { symbol: "BABA", ipoDate: "2014-09-19" },
+    { symbol: "SHOP", ipoDate: "2015-05-21" },
+    { symbol: "SQ", ipoDate: "2015-11-19" },
+    { symbol: "ZM", ipoDate: "2019-04-18" },
+    { symbol: "UBER", ipoDate: "2019-05-10" },
+    { symbol: "LYFT", ipoDate: "2019-03-29" },
+    { symbol: "SNAP", ipoDate: "2017-03-02" },
+  ];
+
+  // Random selection functions
+  const getRandomStock = () => {
+    const randomIndex = Math.floor(Math.random() * stocksWithIPO.length);
+    return stocksWithIPO[randomIndex].symbol;
+  };
+
+  const getRandomDate = (stockSymbol?: string) => {
+    const today = new Date();
+    const maxYearsBack = 10;
+    const minYearsBack = 0.5; // At least 6 months ago
+
+    let earliestDate = new Date(
+      today.getTime() - maxYearsBack * 365 * 24 * 60 * 60 * 1000
+    );
+
+    // If a stock symbol is provided, ensure date is after IPO
+    if (stockSymbol) {
+      const stockData = stocksWithIPO.find(
+        (stock) => stock.symbol === stockSymbol
+      );
+      if (stockData) {
+        const ipoDate = new Date(stockData.ipoDate);
+        // Use the later of either the IPO date or our earliest possible date
+        earliestDate = ipoDate > earliestDate ? ipoDate : earliestDate;
+      }
+    }
+
+    const latestDate = new Date(
+      today.getTime() - minYearsBack * 365 * 24 * 60 * 60 * 1000
+    );
+
+    // Ensure we don't try to generate a date where earliest > latest
+    if (earliestDate >= latestDate) {
+      earliestDate = new Date(latestDate.getTime() - 365 * 24 * 60 * 60 * 1000); // 1 year before latest
+    }
+
+    const timeDiff = latestDate.getTime() - earliestDate.getTime();
+    const randomTime = Math.random() * timeDiff;
+    const randomDate = new Date(earliestDate.getTime() + randomTime);
+
+    return randomDate.toISOString().split("T")[0];
+  };
+
+  const getRandomAmount = () => {
+    const amounts = [500, 1000, 1500, 2000, 2500, 5000, 10000];
+    const randomIndex = Math.floor(Math.random() * amounts.length);
+    return amounts[randomIndex].toString();
+  };
+
+  // Button handlers for random selection
+  const handleRandomStock = () => {
+    const newStock = getRandomStock();
+    setFormData((prev) => {
+      // Check if current date is valid for the new stock
+      let newDate = prev.date;
+      if (prev.date) {
+        const stockData = stocksWithIPO.find(
+          (stock) => stock.symbol === newStock
+        );
+        if (stockData) {
+          const currentDate = new Date(prev.date);
+          const ipoDate = new Date(stockData.ipoDate);
+          // If current date is before IPO, generate a new valid date
+          if (currentDate < ipoDate) {
+            newDate = getRandomDate(newStock);
+          }
+        }
+      }
+
+      return {
+        ...prev,
+        symbol: newStock,
+        date: newDate,
+      };
+    });
+  };
+
+  const handleRandomDate = () => {
+    setFormData((prev) => ({
+      ...prev,
+      date: getRandomDate(prev.symbol || undefined),
+    }));
+  };
+
+  const handleRandomAmount = () => {
+    setFormData((prev) => ({
+      ...prev,
+      amount: getRandomAmount(),
+    }));
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -51,10 +196,26 @@ const InvestmentCalculator: React.FC = () => {
 
       setResult(response.data);
     } catch (err: any) {
-      setError(
-        err.response?.data?.error ||
-          "An error occurred while calculating the investment"
-      );
+      console.error("API Error:", err);
+
+      if (err.response) {
+        // Server responded with error status
+        console.error("Response data:", err.response.data);
+        console.error("Response status:", err.response.status);
+        setError(
+          err.response.data?.error || `Server error: ${err.response.status}`
+        );
+      } else if (err.request) {
+        // Network error - request was made but no response received
+        console.error("Network error:", err.request);
+        setError(
+          "Cannot connect to server. Make sure the backend is running on port 5001."
+        );
+      } else {
+        // Something else happened
+        console.error("Error:", err.message);
+        setError(`Error: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -117,21 +278,30 @@ const InvestmentCalculator: React.FC = () => {
                   htmlFor="symbol"
                   className="block text-sm font-semibold text-gray-700 mb-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <svg
-                      className="w-4 h-4 text-blue-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <svg
+                        className="w-4 h-4 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                        ></path>
+                      </svg>
+                      <span>Stock Symbol</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRandomStock}
+                      className="px-2 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors duration-200"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                      ></path>
-                    </svg>
-                    <span>Stock Symbol</span>
+                      Random Stock
+                    </button>
                   </div>
                 </label>
                 <input
@@ -152,21 +322,30 @@ const InvestmentCalculator: React.FC = () => {
                   htmlFor="date"
                   className="block text-sm font-semibold text-gray-700 mb-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <svg
-                      className="w-4 h-4 text-green-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <svg
+                        className="w-4 h-4 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        ></path>
+                      </svg>
+                      <span>Investment Date</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRandomDate}
+                      className="px-2 py-1 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 transition-colors duration-200"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      ></path>
-                    </svg>
-                    <span>Investment Date</span>
+                      Random Date
+                    </button>
                   </div>
                 </label>
                 <input
@@ -187,21 +366,30 @@ const InvestmentCalculator: React.FC = () => {
                   htmlFor="amount"
                   className="block text-sm font-semibold text-gray-700 mb-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <svg
-                      className="w-4 h-4 text-purple-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <svg
+                        className="w-4 h-4 text-purple-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                        ></path>
+                      </svg>
+                      <span>Investment Amount</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRandomAmount}
+                      className="px-2 py-1 bg-purple-500 text-white text-xs rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 transition-colors duration-200"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                      ></path>
-                    </svg>
-                    <span>Investment Amount</span>
+                      Random Amount
+                    </button>
                   </div>
                 </label>
                 <div className="relative">
