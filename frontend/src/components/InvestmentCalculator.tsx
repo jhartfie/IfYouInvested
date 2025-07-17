@@ -185,14 +185,16 @@ const InvestmentCalculator: React.FC = () => {
     setResult(null);
 
     try {
-      const response = await axios.post(
-        "http://localhost:5001/api/stocks/calculate", // TODO: change to production URL
-        {
-          symbol: formData.symbol,
-          date: formData.date,
-          amount: parseFloat(formData.amount),
-        }
-      );
+      // Use relative URL for production, absolute for development
+      const apiUrl =
+        process.env.NODE_ENV === "production"
+          ? ""
+          : process.env.REACT_APP_API_URL || "http://localhost:5001";
+      const response = await axios.post(`${apiUrl}/api/stocks/calculate`, {
+        symbol: formData.symbol,
+        date: formData.date,
+        amount: parseFloat(formData.amount),
+      });
 
       setResult(response.data);
     } catch (err: any) {

@@ -1,0 +1,24 @@
+{
+  "buildCommand": "npm run install-all && cd frontend && npm run build",
+  "outputDirectory": "frontend/build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "functions": {
+    "backend/server.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/build/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
