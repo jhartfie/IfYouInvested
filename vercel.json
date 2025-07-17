@@ -3,11 +3,12 @@
   "outputDirectory": "frontend/build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "functions": {
-    "backend/server.js": {
-      "runtime": "nodejs18.x"
+  "builds": [
+    {
+      "src": "backend/server.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
