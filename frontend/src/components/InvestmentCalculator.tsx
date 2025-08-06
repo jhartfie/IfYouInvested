@@ -36,7 +36,6 @@ const InvestmentCalculator: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [isFormValid, setIsFormValid] = useState(false);
   const [showSymbolSuggestions, setShowSymbolSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [touchedFields, setTouchedFields] = useState<{[key: string]: boolean}>({});
@@ -265,7 +264,6 @@ const InvestmentCalculator: React.FC = () => {
     }
 
     setValidationErrors(errors);
-    setIsFormValid(isValid);
     return isValid;
   };
 
@@ -300,13 +298,6 @@ const InvestmentCalculator: React.FC = () => {
     setTimeout(() => validateForm(newFormData), 100);
   };
 
-  // Check if form is valid whenever formData changes
-  React.useEffect(() => {
-    const symbolValid = validateSymbol(formData.symbol).isValid;
-    const dateValid = validateDate(formData.date).isValid;
-    const amountValid = validateAmount(formData.amount).isValid;
-    setIsFormValid(symbolValid && dateValid && amountValid);
-  }, [formData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
